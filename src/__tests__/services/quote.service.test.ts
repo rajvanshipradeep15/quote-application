@@ -55,11 +55,32 @@ describe('QuoteService', () => {
     it('makes the new quote eligible to be served', () => {
       quoteService.addQuote('Findable quote for testing.', 'Test Author', 'emotional');
 
+      // Probabilistic (random selection over the whole pool), so use enough
+      // draws that a false negative is vanishingly unlikely regardless of
+      // how large the pool has grown from earlier tests in this file.
       let found = false;
-      for (let i = 0; i < 200 && !found; i++) {
+      for (let i = 0; i < 3000 && !found; i++) {
         if (quoteService.getRandomQuote().text === 'Findable quote for testing.') found = true;
       }
       expect(found).toBe(true);
+    });
+  });
+
+  describe('getAllQuotes', () => {
+    it('returns every quote currently in the database', () => {
+      const all = quoteService.getAllQuotes();
+      expect(all.length).toBe(quoteService.getPoolSize());
+      for (const q of all) {
+        expect(typeof q.text).toBe('string');
+        expect(typeof q.author).toBe('string');
+        expect(['playful', 'emotional', 'poetic']).toContain(q.category);
+      }
+    });
+
+    it('includes a quote added via addQuote', () => {
+      quoteService.addQuote('A quote findable via getAllQuotes.', 'Test Author', 'playful');
+      const all = quoteService.getAllQuotes();
+      expect(all.some((q) => q.text === 'A quote findable via getAllQuotes.')).toBe(true);
     });
   });
 

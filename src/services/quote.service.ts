@@ -35,6 +35,10 @@ class QuoteService {
     return db.prepare('DELETE FROM quotes WHERE text = ?').run(text).changes;
   }
 
+  getAllQuotes(): QuoteWithCategory[] {
+    return db.prepare('SELECT text, author, category FROM quotes').all() as QuoteWithCategory[];
+  }
+
   getPoolSize(): number {
     const { count } = db.prepare('SELECT COUNT(*) as count FROM quotes').get() as { count: number };
     return count;

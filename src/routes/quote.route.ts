@@ -11,6 +11,10 @@ router.get('/quote/random', authMiddleware, (_req: Request, res: Response) => {
   res.status(200).json(quote);
 });
 
+router.get('/quotes', adminAuthMiddleware, (_req: Request, res: Response) => {
+  res.status(200).json(quoteService.getAllQuotes());
+});
+
 router.post('/quotes', adminAuthMiddleware, (req: Request, res: Response) => {
   const { text, author, category } = req.body ?? {};
 

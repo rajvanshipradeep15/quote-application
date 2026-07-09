@@ -64,6 +64,32 @@ describe('GET /quote/random', () => {
   });
 });
 
+describe('GET /quotes', () => {
+  it('returns 401 when no admin API key is provided', async () => {
+    const res = await request(app).get('/quotes');
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 401 when the regular (read-only) API key is used instead of the admin key', async () => {
+    const res = await request(app)
+      .get('/quotes')
+      .set('x-api-key', VALID_KEY);
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 200 with the full list of quotes when the admin key is provided', async () => {
+    const res = await request(app)
+      .get('/quotes')
+      .set('x-api-key', VALID_ADMIN_KEY);
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThan(0);
+    expect(res.body[0]).toHaveProperty('text');
+    expect(res.body[0]).toHaveProperty('author');
+    expect(res.body[0]).toHaveProperty('category');
+  });
+});
+
 describe('POST /quotes', () => {
   it('returns 401 when no admin API key is provided', async () => {
     const res = await request(app)
