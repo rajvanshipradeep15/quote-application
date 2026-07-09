@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import { authMiddleware } from '../../middleware/auth.middleware';
+import { authMiddleware, adminAuthMiddleware } from '../../middleware/auth.middleware';
 
 const VALID_KEY = 'test-api-key';
+const VALID_ADMIN_KEY = 'test-admin-key';
 
 function makeReqRes(headers: Record<string, string> = {}): {
   req: Partial<Request>;
@@ -19,10 +20,12 @@ function makeReqRes(headers: Record<string, string> = {}): {
 
 beforeEach(() => {
   process.env.API_KEY = VALID_KEY;
+  process.env.ADMIN_API_KEY = VALID_ADMIN_KEY;
 });
 
 afterEach(() => {
   delete process.env.API_KEY;
+  delete process.env.ADMIN_API_KEY;
 });
 
 describe('authMiddleware', () => {
@@ -46,6 +49,36 @@ describe('authMiddleware', () => {
     authMiddleware(req as Request, res as Response, next);
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ error: 'Unauthorized' });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('returns 401 when the admin key is provided instead of the regular key', () => {
+    const { req, res, next } = makeReqRes({ 'x-api-key': VALID_ADMIN_KEY });
+    authMiddleware(req as Request, res as Response, next);
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(next).not.toHaveBeenCalled();
+  });
+});
+
+describe('adminAuthMiddleware', () => {
+  it('calls next() when the correct admin API key is provided', () => {
+    const { req, res, next } = makeReqRes({ 'x-api-key': VALID_ADMIN_KEY });
+    adminAuthMiddleware(req as Request, res as Response, next);
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(res.status).not.toHaveBeenCalled();
+  });
+
+  it('returns 401 when the admin key is missing', () => {
+    const { req, res, next } = makeReqRes({});
+    adminAuthMiddleware(req as Request, res as Response, next);
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('returns 401 when the regular (read-only) API key is used instead of the admin key', () => {
+    const { req, res, next } = makeReqRes({ 'x-api-key': VALID_KEY });
+    adminAuthMiddleware(req as Request, res as Response, next);
+    expect(res.status).toHaveBeenCalledWith(401);
     expect(next).not.toHaveBeenCalled();
   });
 });

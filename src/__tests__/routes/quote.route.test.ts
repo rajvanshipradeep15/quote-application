@@ -2,13 +2,16 @@ import request from 'supertest';
 import app from '../../app';
 
 const VALID_KEY = 'integration-test-key';
+const VALID_ADMIN_KEY = 'integration-test-admin-key';
 
 beforeAll(() => {
   process.env.API_KEY = VALID_KEY;
+  process.env.ADMIN_API_KEY = VALID_ADMIN_KEY;
 });
 
 afterAll(() => {
   delete process.env.API_KEY;
+  delete process.env.ADMIN_API_KEY;
 });
 
 describe('GET /health', () => {
@@ -58,5 +61,56 @@ describe('GET /quote/random', () => {
       texts.add(res.body.text);
     }
     expect(texts.size).toBeGreaterThan(1);
+  });
+});
+
+describe('POST /quotes', () => {
+  it('returns 401 when no admin API key is provided', async () => {
+    const res = await request(app)
+      .post('/quotes')
+      .send({ text: 'New quote.', author: 'Someone', category: 'playful' });
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 401 when the regular (read-only) API key is used instead of the admin key', async () => {
+    const res = await request(app)
+      .post('/quotes')
+      .set('x-api-key', VALID_KEY)
+      .send({ text: 'New quote.', author: 'Someone', category: 'playful' });
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 400 when text is missing', async () => {
+    const res = await request(app)
+      .post('/quotes')
+      .set('x-api-key', VALID_ADMIN_KEY)
+      .send({ author: 'Someone', category: 'playful' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when author is missing', async () => {
+    const res = await request(app)
+      .post('/quotes')
+      .set('x-api-key', VALID_ADMIN_KEY)
+      .send({ text: 'New quote.', category: 'playful' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when category is invalid', async () => {
+    const res = await request(app)
+      .post('/quotes')
+      .set('x-api-key', VALID_ADMIN_KEY)
+      .send({ text: 'New quote.', author: 'Someone', category: 'sarcastic' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 201 and the created quote when valid', async () => {
+    const res = await request(app)
+      .post('/quotes')
+      .set('x-api-key', VALID_ADMIN_KEY)
+      .send({ text: 'A freshly added quote.', author: 'New Author', category: 'poetic' });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual({ text: 'A freshly added quote.', author: 'New Author', category: 'poetic' });
   });
 });
