@@ -31,4 +31,21 @@ router.post('/quotes', adminAuthMiddleware, (req: Request, res: Response) => {
   res.status(201).json(quote);
 });
 
+router.delete('/quotes', adminAuthMiddleware, (req: Request, res: Response) => {
+  const { text } = req.body ?? {};
+
+  if (typeof text !== 'string' || text.trim().length === 0) {
+    res.status(400).json({ error: 'text is required' });
+    return;
+  }
+
+  const deleted = quoteService.deleteQuoteByText(text.trim());
+  if (deleted === 0) {
+    res.status(404).json({ error: 'No quote matched that text' });
+    return;
+  }
+
+  res.status(200).json({ deleted });
+});
+
 export default router;

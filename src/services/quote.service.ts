@@ -30,6 +30,11 @@ class QuoteService {
     return { text, author, category };
   }
 
+  // Deletes every row with an exact text match and returns how many were removed.
+  deleteQuoteByText(text: string): number {
+    return db.prepare('DELETE FROM quotes WHERE text = ?').run(text).changes;
+  }
+
   getPoolSize(): number {
     const { count } = db.prepare('SELECT COUNT(*) as count FROM quotes').get() as { count: number };
     return count;

@@ -62,4 +62,21 @@ describe('QuoteService', () => {
       expect(found).toBe(true);
     });
   });
+
+  describe('deleteQuoteByText', () => {
+    it('removes a matching quote and returns the number of rows deleted', () => {
+      quoteService.addQuote('A quote to delete.', 'Test Author', 'poetic');
+      const before = quoteService.getPoolSize();
+
+      const deleted = quoteService.deleteQuoteByText('A quote to delete.');
+
+      expect(deleted).toBe(1);
+      expect(quoteService.getPoolSize()).toBe(before - 1);
+    });
+
+    it('returns 0 when no quote matches the given text', () => {
+      const deleted = quoteService.deleteQuoteByText('This text does not exist anywhere.');
+      expect(deleted).toBe(0);
+    });
+  });
 });

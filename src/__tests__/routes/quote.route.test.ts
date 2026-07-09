@@ -114,3 +114,51 @@ describe('POST /quotes', () => {
     expect(res.body).toEqual({ text: 'A freshly added quote.', author: 'New Author', category: 'poetic' });
   });
 });
+
+describe('DELETE /quotes', () => {
+  it('returns 401 when no admin API key is provided', async () => {
+    const res = await request(app)
+      .delete('/quotes')
+      .send({ text: 'Anything.' });
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 401 when the regular (read-only) API key is used instead of the admin key', async () => {
+    const res = await request(app)
+      .delete('/quotes')
+      .set('x-api-key', VALID_KEY)
+      .send({ text: 'Anything.' });
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 400 when text is missing', async () => {
+    const res = await request(app)
+      .delete('/quotes')
+      .set('x-api-key', VALID_ADMIN_KEY)
+      .send({});
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 404 when no quote matches the given text', async () => {
+    const res = await request(app)
+      .delete('/quotes')
+      .set('x-api-key', VALID_ADMIN_KEY)
+      .send({ text: 'This text does not exist anywhere in the pool.' });
+    expect(res.status).toBe(404);
+  });
+
+  it('returns 200 with the deleted count when the quote is removed', async () => {
+    await request(app)
+      .post('/quotes')
+      .set('x-api-key', VALID_ADMIN_KEY)
+      .send({ text: 'A quote destined for deletion.', author: 'Someone', category: 'playful' });
+
+    const res = await request(app)
+      .delete('/quotes')
+      .set('x-api-key', VALID_ADMIN_KEY)
+      .send({ text: 'A quote destined for deletion.' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ deleted: 1 });
+  });
+});
