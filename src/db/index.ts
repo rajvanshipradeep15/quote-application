@@ -24,6 +24,13 @@ db.exec(`
   )
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS hits (
+    date TEXT PRIMARY KEY,
+    count INTEGER NOT NULL DEFAULT 0
+  )
+`);
+
 // One-time seed: only runs against a fresh/empty database (e.g. a new Railway
 // volume). Once quotes exist, this is a no-op — all future additions go
 // through the POST /quotes endpoint instead of the bundled JSON snapshot.

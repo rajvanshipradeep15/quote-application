@@ -48,6 +48,21 @@ class QuoteService {
     return [...this.recentIds];
   }
 
+  // Increments today's hit count (UTC date), creating the row if needed.
+  recordHit(date: string = new Date().toISOString().slice(0, 10)): void {
+    db.prepare(
+      `INSERT INTO hits (date, count) VALUES (?, 1)
+       ON CONFLICT(date) DO UPDATE SET count = count + 1`
+    ).run(date);
+  }
+
+  getHitStats(): { date: string; count: number }[] {
+    return db.prepare('SELECT date, count FROM hits ORDER BY date ASC').all() as {
+      date: string;
+      count: number;
+    }[];
+  }
+
   // Excludes ids currently in the dedup buffer. Falls back to the full pool
   // (excluding nothing) when every quote has been excluded — only relevant
   // for very small pools where the buffer can outgrow the available quotes.

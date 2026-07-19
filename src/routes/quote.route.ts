@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware, adminAuthMiddleware } from '../middleware/auth.middleware.js';
 import { quoteService } from '../services/quote.service.js';
+import { quoteEvents, QUOTE_SERVED } from '../events/quoteEvents.js';
 import { QuoteCategory } from '../types/index.js';
 
 const router = Router();
@@ -9,6 +10,11 @@ const VALID_CATEGORIES: QuoteCategory[] = ['playful', 'emotional', 'poetic'];
 router.get('/quote/random', authMiddleware, (_req: Request, res: Response) => {
   const quote = quoteService.getRandomQuote();
   res.status(200).json(quote);
+  quoteEvents.emit(QUOTE_SERVED);
+});
+
+router.get('/stats', adminAuthMiddleware, (_req: Request, res: Response) => {
+  res.status(200).json(quoteService.getHitStats());
 });
 
 router.get('/quotes', adminAuthMiddleware, (_req: Request, res: Response) => {

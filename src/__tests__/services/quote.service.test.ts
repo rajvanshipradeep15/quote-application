@@ -84,6 +84,37 @@ describe('QuoteService', () => {
     });
   });
 
+  describe('recordHit / getHitStats', () => {
+    it('creates a row with count 1 the first time a date is hit', () => {
+      quoteService.recordHit('2026-01-01');
+      expect(quoteService.getHitStats()).toContainEqual({ date: '2026-01-01', count: 1 });
+    });
+
+    it('increments the count for repeated hits on the same date', () => {
+      quoteService.recordHit('2026-01-02');
+      quoteService.recordHit('2026-01-02');
+      quoteService.recordHit('2026-01-02');
+      expect(quoteService.getHitStats()).toContainEqual({ date: '2026-01-02', count: 3 });
+    });
+
+    it('tracks separate dates independently', () => {
+      quoteService.recordHit('2026-02-01');
+      quoteService.recordHit('2026-02-02');
+      const stats = quoteService.getHitStats();
+      expect(stats).toContainEqual({ date: '2026-02-01', count: 1 });
+      expect(stats).toContainEqual({ date: '2026-02-02', count: 1 });
+    });
+
+    it('returns stats ordered by date ascending', () => {
+      quoteService.recordHit('2026-03-05');
+      quoteService.recordHit('2026-03-01');
+      quoteService.recordHit('2026-03-03');
+      const dates = quoteService.getHitStats().map((s) => s.date);
+      const sorted = [...dates].sort();
+      expect(dates).toEqual(sorted);
+    });
+  });
+
   describe('deleteQuoteByText', () => {
     it('removes a matching quote and returns the number of rows deleted', () => {
       quoteService.addQuote('A quote to delete.', 'Test Author', 'poetic');

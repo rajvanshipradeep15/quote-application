@@ -64,6 +64,48 @@ describe('GET /quote/random', () => {
   });
 });
 
+describe('GET /stats', () => {
+  it('returns 401 when no admin API key is provided', async () => {
+    const res = await request(app).get('/stats');
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 401 when the regular (read-only) API key is used instead of the admin key', async () => {
+    const res = await request(app)
+      .get('/stats')
+      .set('x-api-key', VALID_KEY);
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 200 with an array of daily hit counts', async () => {
+    const res = await request(app)
+      .get('/stats')
+      .set('x-api-key', VALID_ADMIN_KEY);
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+  });
+
+  it('reflects hits recorded by GET /quote/random', async () => {
+    const before = await request(app)
+      .get('/stats')
+      .set('x-api-key', VALID_ADMIN_KEY);
+    const beforeTotal = before.body.reduce((sum: number, row: { count: number }) => sum + row.count, 0);
+
+    await request(app).get('/quote/random').set('x-api-key', VALID_KEY);
+
+    // The hit is recorded asynchronously (via quoteEvents + setImmediate)
+    // after the response is sent, so give the event loop a tick to flush it.
+    await new Promise((resolve) => setImmediate(resolve));
+
+    const after = await request(app)
+      .get('/stats')
+      .set('x-api-key', VALID_ADMIN_KEY);
+    const afterTotal = after.body.reduce((sum: number, row: { count: number }) => sum + row.count, 0);
+
+    expect(afterTotal).toBe(beforeTotal + 1);
+  });
+});
+
 describe('GET /quotes', () => {
   it('returns 401 when no admin API key is provided', async () => {
     const res = await request(app).get('/quotes');
